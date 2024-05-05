@@ -1,8 +1,11 @@
-﻿using CoreProject.DataAccessLayer.Models;
+﻿using AutoMapper;
+using CoreProject.DataAccessLayer;
+using CoreProject.DataAccessLayer.Models;
 using CoreProject.InterfaceRepository;
 using CoreProject.Model;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,6 +16,16 @@ namespace CoreProject.ImplementInterfaceRepsitory
     public class StudentRepository : IStudentRepository
     {
         BlogDbContext db = new BlogDbContext();
+
+
+        private readonly IMapper _mapper;
+        StudentDataLayer _studentdatalayer;
+
+        public StudentRepository(IMapper mapper, StudentDataLayer studentdatalayer)
+        {
+            _mapper = mapper;
+            _studentdatalayer = studentdatalayer;
+        }
         public async Task<List<StudentBLL>> InnerJoinStudentDetail(int id)
         {
 
@@ -261,65 +274,199 @@ namespace CoreProject.ImplementInterfaceRepsitory
             string abc = string.Join(",", ab);
 
             List<StudentBLL> allItems = (
-                                        from _student in db.Students
-                                            //join _StudentCourseMs in db.StudentCourseMs on  _student.StudentId equals
-
-                                            //_StudentCourseMs.StudentId
-
-                                            // into temp1
-                                            // from temp2 in temp1.DefaultIfEmpty()
-
-                                        join _ThAttemptMarks in db.ThAttemptMarks
-
-                                        // //on new { StudentId = (int?)_StudentCourseMs.StudentId, StudentIdd = _StudentCourseMs.StudentId }
-                                        // //equals new { StudentId = _ThAttemptMarks.StudentId, StudentIdd =  }
-                                        on _student.StudentId equals _ThAttemptMarks.StudentId
-
-                                        into temp3
-                                        from temp4 in temp3.DefaultIfEmpty()
-
-
-                                            //join _Semesters in db.Semesters
-                                            //on _StudentCourseMs.CourseId equals _Semesters.CourseId
-
-                                            // join _ThAttemptMarks in db.ThAttemptMarks
-                                            //  on _student.StudentId equals _ThAttemptMarks.StudentId
-
-
-                                            //  where _student.StudentId == 1
-
-
-                                        group new {
-                                            _student.StudentId,
-                                            _student.StudentName,
-                                            temp4.ThAttemptSubMark,
-
-                                        }
-                                         by new
-                                         {
-                                             _student.StudentId,
-                                             _student.StudentName
-                                             // _ThAttemptMarks.ThAttemptSubMark
-
-
-                                         } into g
-
-
-                                        select new StudentBLL()
-                                        {
-
-                                            StudentId = g.Key.StudentId,
-                                            StudentName = g.Key.StudentName,
-
-                                            TotalMarks = g.Sum(p => (p.ThAttemptSubMark == null ? 0 : p.ThAttemptSubMark)),
-                                           // TotalTheorySubjectCount = (from _sub in db.ThAttemptMarks where _sub.StudentId == g.Key.StudentId select _sub.ThAttemptSubMark).Sum()
-
-                                           TotalTheorySubjectCount = g.Count(p=>p.ThAttemptSubMark.HasValue)
-
-
-                                        }).ToList();
+            from _student in db.Students
+            join _ThAttemptMarks in db.ThAttemptMarks
+            on _student.StudentId equals _ThAttemptMarks.StudentId into temp3
+            from temp4 in temp3.DefaultIfEmpty()
+            group new
+            {
+                _student.StudentId,
+                _student.StudentName,
+                temp4.ThAttemptSubMark,
+            }
+            by new
+            {
+                _student.StudentId,
+                _student.StudentName
+            } into g
+            select new StudentBLL()
+            {
+                StudentId = g.Key.StudentId,
+                StudentName = g.Key.StudentName,
+                TotalMarks = g.Sum(p => (p.ThAttemptSubMark == null ? 0 : p.ThAttemptSubMark)),
+                // TotalTheorySubjectCount = (from _sub in db.ThAttemptMarks where _sub.StudentId == g.Key.StudentId select _sub.ThAttemptSubMark).Sum()
+                TotalTheorySubjectCount = g.Count(p => p.ThAttemptSubMark.HasValue)
+            }).ToList();
 
             return allItems;
         }
+
+        public async Task<List<StudentBLL>> SearchString()
+        {
+
+
+            string searchstring = "jai,vijay,ram";
+            string[] search = searchstring.Split(",");
+
+            List<StudentBLL> allItems = (from _Stdcrs in db.Students
+                                         where search.Contains(_Stdcrs.StudentName)
+                                         select new StudentBLL()
+
+                                         {
+                                             StudentId = _Stdcrs.StudentId
+
+                                         }).ToList();
+            return allItems;
+
+        }
+
+
+        public async Task<List<StudentBLL>> AddTempClass()
+        {
+
+
+            List<StudentBLL> stdcommon = (from _std in db.Students
+                                          join _stdcrs in db.StudentCourseMs
+                                         on _std.StudentId equals _stdcrs.StudentId
+
+                                          select new StudentBLL()
+
+                                          {
+                                              StudentId = _std.StudentId
+                                              ,
+                                              StudentName = _std.StudentName
+                                          }).ToList();
+
+            string sample = "A,B,C";
+            string[] s = sample.Split(",");
+
+            //   int[] myArray = stdcommon.Select(x => Convert.ToInt32(x.StudentId)).ToArray();
+
+
+            List<StudentBLL> allItems = (from _std in db.Students
+                                         where
+                                         stdcommon.Select(x => Convert.ToInt32(x.StudentId)).ToArray().
+                                         Contains(_std.StudentId)
+
+                                         || stdcommon.Select(x => x.StudentName).ToArray().
+                                         Contains(_std.StudentName)
+
+
+
+                                         select new StudentBLL()
+
+                                         {
+                                             StudentId = _std.StudentId
+
+                                         }).ToList();
+
+
+            //var allItems =
+            // (from x in db.Students
+            //            .Select(z => new {
+            //                z.StudentId,
+            //                z.StudentName,
+            //                z.FatherName,
+            //                z.MotherName
+            //            }).AsEnumerable()
+            //  join y in stdcommon
+            //     on new { StudentId=x.StudentId } equals new { StudentId= y.StudentId }
+            //  select x).ToList();
+
+            //on new { ThSubMarkId = (int?)temp14.ThSubMarkId, StudentId = _StudentCourse_M.StudentId }
+            //equals new { ThSubMarkId = _ThAttemptMarks.ThSubMarkId, StudentId = _ThAttemptMarks.StudentId }
+
+
+
+            //List<StudentBLL> allItems = (from _Stdcrs in db.Students
+
+            //                             join _stdcommon in stdcommon
+
+            //                              on new { StudentId= _Stdcrs.StudentId } equals new { StudentId=(int)_stdcommon.StudentId }
+
+            //                            // on _Stdcrs.StudentId equals _stdcommon.StudentId
+
+            //                             //where stdcommon.Contains(_Stdcrs.StudentId)//
+            //                              select new StudentBLL()
+
+            //                              {
+            //                                  StudentId = _Stdcrs.StudentId
+
+            //                              }).ToList();
+
+            return allItems;
+
+        }
+
+
+        public static List<Student> MapList(List<StudentBLL> input)
+        {
+            List<Student> s = new List<Student>();
+            foreach (var ab in input)
+            {
+                Student s1 = new Student();
+                s1.StudentId = Convert.ToInt32(ab.StudentId);
+                s.Add(s1);
+            }
+
+            return s;
+        }
+
+
+        public async Task<int> SaveData(StudentBLL inputparam)
+        {
+            using var context = new BlogDbContext();
+            using var transaction = context.Database.BeginTransaction();
+            try
+            {
+
+                var studentmodel = _mapper.Map<Student>(inputparam);
+                int studentid = await _studentdatalayer.AddStudent(studentmodel);
+                var stdaddressdetail = (from _ab in inputparam.stdaddressdetail select new StudentAddressDetailBLL {
+                    PinCode=_ab.PinCode,
+                    StudentId = studentid,
+                    AddressId=_ab.AddressId,
+                    AddressDetail=_ab.AddressDetail }).FirstOrDefault();
+
+
+                // StudentAddressDetailBLL stdaddressdetail = new StudentAddressDetailBLL();
+
+            //foreach (var ab in inputparam.stdaddressdetail)
+            //{
+            //    stdaddressdetail.PinCode = ab.PinCode;
+            //    stdaddressdetail.StudentId = studentid;
+            //    stdaddressdetail.AddressDetail = ab.AddressDetail;
+            //    stdaddressdetail.AddressId = ab.AddressId;
+
+            //}
+
+            //var stdaddressdetail = new StudentAddressDetailBLL { StudentId = studentid,
+
+            //    AddressDetail=inputparam.stdaddressdetail                  
+            //};
+
+
+
+                var studentAddressDetail = _mapper.Map<StudentAddressDetailBLL, StudentAddressDetail>(stdaddressdetail);
+                int customerid = await _studentdatalayer.AddAddresDetail(studentAddressDetail);
+
+
+                transaction.Commit();
+                return customerid;
+
+            }
+
+            catch (Exception ex)
+            {
+                int a = 0;
+                transaction.Rollback();
+                return a;
+
+            }
+        }
+
+
+
+
     }
 }
