@@ -428,25 +428,6 @@ namespace CoreProject.ImplementInterfaceRepsitory
                     AddressId=_ab.AddressId,
                     AddressDetail=_ab.AddressDetail }).FirstOrDefault();
 
-
-                // StudentAddressDetailBLL stdaddressdetail = new StudentAddressDetailBLL();
-
-            //foreach (var ab in inputparam.stdaddressdetail)
-            //{
-            //    stdaddressdetail.PinCode = ab.PinCode;
-            //    stdaddressdetail.StudentId = studentid;
-            //    stdaddressdetail.AddressDetail = ab.AddressDetail;
-            //    stdaddressdetail.AddressId = ab.AddressId;
-
-            //}
-
-            //var stdaddressdetail = new StudentAddressDetailBLL { StudentId = studentid,
-
-            //    AddressDetail=inputparam.stdaddressdetail                  
-            //};
-
-
-
                 var studentAddressDetail = _mapper.Map<StudentAddressDetailBLL, StudentAddressDetail>(stdaddressdetail);
                 int customerid = await _studentdatalayer.AddAddresDetail(studentAddressDetail);
 
@@ -464,6 +445,64 @@ namespace CoreProject.ImplementInterfaceRepsitory
 
             }
         }
+
+
+         public int SaveStudentRecord(StudentBLL inputparam)
+        {
+
+            var stdaddressdetail = (from _ab in inputparam.stdaddressdetail
+                                    select new StudentAddressDetailBLL
+                                    {
+                                        PinCode = _ab.PinCode,
+                                        StudentId = _ab.StudentId,
+                                        AddressId = _ab.AddressId,
+                                        AddressDetail = _ab.AddressDetail
+                                    }).FirstOrDefault();
+
+            var parentDto = _mapper.Map<Student>(inputparam);
+            var childDto = _mapper.Map<StudentAddressDetail>(stdaddressdetail);
+            int a= _studentdatalayer.addStudentRecord(parentDto,childDto);
+
+            return a;
+
+
+        }
+
+
+        public int SaveBUlkStudentRecord(StudentBLL inputparam)
+        {
+
+            //var stdaddressdetail = (from _ab in inputparam.stdaddressdetail
+            //                        select new StudentAddressDetailBLL
+            //                        {
+            //                            PinCode = _ab.PinCode,
+            //                            StudentId = _ab.StudentId,
+            //                            AddressId = _ab.AddressId,
+            //                            AddressDetail = _ab.AddressDetail
+            //                        }).FirstOrDefault();
+
+            List<StudentAddressDetailBLL> stdaddressdetail =
+
+                (from _ab in inputparam.stdaddressdetail
+                 select new StudentAddressDetailBLL
+                 {
+                     PinCode = _ab.PinCode,
+                     StudentId = _ab.StudentId,
+                     AddressId = _ab.AddressId,
+                     AddressDetail = _ab.AddressDetail
+                 }).ToList();
+
+
+
+            var parentDto = _mapper.Map<Student>(inputparam);
+            var childDto = _mapper.Map<List<StudentAddressDetail>>(stdaddressdetail);
+            int a = _studentdatalayer.addbulkrecord(parentDto, childDto);
+
+            return a;
+
+
+        }
+
 
 
 
