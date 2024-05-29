@@ -1,0 +1,70 @@
+//Column sum
+
+<div ng-controller="GridController">
+    <div class="gridStyle" ng-grid="gridOptions"></div>
+    <p>Sum of Column: {{sumOfColumn}}</p>
+</div>
+javascript
+Copy code
+var app = angular.module('myApp', ['ngGrid']);
+
+app.controller('GridController', function($scope) {
+    $scope.gridOptions = {
+        data: 'myData',
+        columnDefs: [
+            { field: 'name', displayName: 'Name' },
+            { field: 'age', displayName: 'Age' },
+            { field: 'salary', displayName: 'Salary' }
+        ]
+    };
+
+    $scope.myData = [
+        { name: 'John', age: 30, salary: 50000 },
+        { name: 'Jane', age: 25, salary: 60000 },
+        { name: 'Bob', age: 35, salary: 70000 }
+    ];
+
+    $scope.sumColumn = function(field) {
+        var sum = 0;
+        angular.forEach($scope.myData, function(item) {
+            sum += parseInt(item[field]);
+        });
+        return sum;
+    };
+
+    $scope.sumOfColumn = $scope.sumColumn('salary');
+});
+
+// Case use in column 
+
+
+$scope.gridOptions = {
+    data: 'myData',
+    columnDefs: [
+        { field: 'name', displayName: 'Name' },
+        { field: 'age', displayName: 'Age' },
+        {
+            field: 'gender',
+            displayName: 'Gender',
+            cellTemplate: '<div ng-switch="row.entity.gender">' +
+                '<div ng-switch-when="male">Male</div>' +
+                '<div ng-switch-when="female">Female</div>' +
+                '<div ng-switch-default>Unknown</div>' +
+                '</div>'
+        }
+    ]
+};
+
+
+$scope.gridOptions = {
+    data: 'myData',
+    columnDefs: [
+        { field: 'name', displayName: 'Name' },
+        { field: 'age', displayName: 'Age' },
+        {
+            field: 'gender',
+            displayName: 'Gender',
+            cellTemplate: '<div>{{row.entity.gender === "male" ? "Male" : (row.entity.gender === "female" ? "Female" : "Unknown")}}</div>'
+        }
+    ]
+};
