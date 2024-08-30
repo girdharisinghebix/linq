@@ -1,0 +1,106 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class Customer
+{
+    public int CustomerId { get; set; }
+    public string Name { get; set; }
+}
+
+public class Order
+{
+    public int OrderId { get; set; }
+    public int CustomerId { get; set; }
+    public string Product { get; set; }
+}
+
+public class Review
+{
+    public int ReviewId { get; set; }
+    public int CustomerId { get; set; }
+    public int Rating { get; set; }
+}
+
+public class Program
+{
+    public static void Main()
+    {
+        // Sample data
+        var customers = new List<Customer>
+        {
+            new Customer { CustomerId = 1, Name = "Alice" },
+            new Customer { CustomerId = 2, Name = "Bob" },
+            new Customer { CustomerId = 3, Name = "Charlie" }
+        };
+
+        var orders = new List<Order>
+        {
+            new Order { OrderId = 101, CustomerId = 1, Product = "Laptop" },
+            new Order { OrderId = 102, CustomerId = 2, Product = "Tablet" },
+            new Order { OrderId = 103, CustomerId = 1, Product = "Smartphone" }
+        };
+
+        var reviews = new List<Review>
+        {
+            new Review { ReviewId = 201, CustomerId = 1, Rating = 5 },
+            new Review { ReviewId = 202, CustomerId = 2, Rating = 4 },
+            new Review { ReviewId = 203, CustomerId = 1, Rating = 3 }
+        };
+
+        // Runtime conditions
+        bool includeOrders = true;
+        bool includeReviews = true;
+
+        IQueryable<Customer> query = customers.AsQueryable();
+
+        if (includeOrders)
+        {
+            query = query
+                .Join(
+                    orders.AsQueryable(),
+                    customer => customer.CustomerId,
+                    order => order.CustomerId,
+                    (customer, order) => new
+                    {
+                        Customer = customer,
+                        Order = order
+                    });
+        }
+
+        if (includeReviews)
+        {
+            query = query
+                .Join(
+                    reviews.AsQueryable(),
+                    customerOrder => customerOrder.Customer.CustomerId,
+                    review => review.CustomerId,
+                    (customerOrder, review) => new
+                    {
+                        Customer = customerOrder.Customer,
+                        Order = customerOrder.Order,
+                        Review = review
+                    });
+        }
+        else if (includeOrders)
+        {
+            // If only orders should be included and reviews are not
+            query = query
+                .Select(co => new
+                {
+                    Customer = co.Customer,
+                    Order = co.Order,
+                    Review = (Review)null
+                });
+        }
+
+        // Execute the query
+        var results = query.ToList();
+
+        // Print results
+        foreach (var item in results)
+        {
+            Console.WriteLine($"Customer: {item.Customer?.Name}, Product: {item.Order?.Product}, Rating: {item.Review?.Rating}");
+        }
+    }
+}
